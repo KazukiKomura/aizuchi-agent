@@ -29,6 +29,9 @@ const server = http.createServer((req, res) => {
             case '.css':
                 contentType = 'text/css';
                 break;
+            case '.mp4':
+                contentType = 'video/mp4';
+                break;
         }
 
         fs.readFile(filePath, (err, content) => {

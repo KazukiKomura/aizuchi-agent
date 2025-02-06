@@ -78,6 +78,14 @@ addEventListener('click', async () => {
     clicked = true;
     clickElem.remove();
 
+    // 動画の再生を開始
+    const video = document.getElementById('sota-video');
+    try {
+        await video.play();
+    } catch (error) {
+        console.error('動画の再生に失敗しました:', error);
+    }
+
     const audioCtx = new AudioContext();
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const input = audioCtx.createMediaStreamSource(stream);
