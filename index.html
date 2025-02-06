@@ -41,6 +41,19 @@
             height: 100%;
             object-fit: cover;
         }
+
+        #theme-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            display: none;
+            /* 初期状態では非表示 */
+        }
     </style>
     <script src="aizuchi.js"></script>
     <script src="index.js" defer></script>
@@ -51,6 +64,9 @@
         <video id="sota-video" loop>
             <source src="/Sota.mp4" type="video/mp4">
         </video>
+    </div>
+    <div id="theme-container">
+        お題：<span id="theme-text"></span>
     </div>
 </body>
 

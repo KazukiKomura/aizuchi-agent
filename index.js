@@ -86,6 +86,12 @@ addEventListener('click', async () => {
         console.error('動画の再生に失敗しました:', error);
     }
 
+    // お題を表示
+    const themeContainer = document.getElementById('theme-container');
+    const themeText = document.getElementById('theme-text');
+    themeText.textContent = 'hogehoge';
+    themeContainer.style.display = 'block';
+
     const audioCtx = new AudioContext();
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const input = audioCtx.createMediaStreamSource(stream);
@@ -105,7 +111,6 @@ addEventListener('click', async () => {
     mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
 
-        // サーバーに音声データを送信
         try {
             const response = await fetch('http://localhost:5500/save-audio', {
                 method: 'POST',
@@ -128,6 +133,7 @@ addEventListener('click', async () => {
         mediaRecorder.stop();
     }, 5000);
 
+    /* 波形表示部分をコメントアウト
     const canvas = document.createElement('canvas');
     canvas.width = innerWidth;
     canvas.height = innerHeight;
@@ -195,4 +201,5 @@ addEventListener('click', async () => {
     });
 
     requestId = requestAnimationFrame(render);
+    */
 });
