@@ -84,9 +84,19 @@ addEventListener('click', async (e) => {
         return;
     }
 
+    // IDが半角英数字のみかチェック
+    if (!/^[A-Za-z0-9]+$/.test(participantId)) {
+        alert('IDは半角英数字のみ使用可能です');
+        return;
+    }
+
     if (clicked) return;
     clicked = true;
     startContainer.remove();
+
+    // 動画コンテナを表示
+    const videoContainer = document.getElementById('video-container');
+    videoContainer.style.display = 'block';
 
     // 動画の再生を開始
     const video = document.getElementById('sota-video');
