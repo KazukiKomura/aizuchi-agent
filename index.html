@@ -20,12 +20,30 @@
             align-items: center;
         }
 
-        div {
+        #start-container {
+            text-align: center;
+        }
+
+        #id-input {
+            display: block;
+            margin: 20px auto;
+            padding: 10px;
+            font-size: 24px;
+            width: 200px;
+            text-align: center;
+            border-radius: 5px;
+            border: 2px solid white;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        #click-text {
             font-size: 64px;
             font-style: italic;
             text-decoration: underline;
             padding: 48px 96px;
             border: 2px solid white;
+            cursor: pointer;
         }
 
         #video-container {
@@ -77,11 +95,17 @@
 </head>
 
 <body>
-    <div id="video-container">
+    <div id="start-container">
+        <input type="text" id="id-input" placeholder="IDを入力してください" />
+        <div id="click-text">Click to Start</div>
+    </div>
+
+    <div id="video-container" style="display: none;">
         <video id="sota-video" loop>
             <source src="/Sota.mp4" type="video/mp4">
         </video>
     </div>
+
     <div id="theme-container">
         お題：<span id="theme-text"></span>
         <button id="stop-button" style="display: none;">録音終了</button>
