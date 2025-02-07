@@ -52,7 +52,24 @@
             background-color: rgba(0, 0, 0, 0.7);
             border-radius: 10px;
             display: none;
-            /* 初期状態では非表示 */
+            text-align: center;
+        }
+
+        #theme-text {
+            display: block;
+            margin-bottom: 20px;
+        }
+
+        #stop-button {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 200px;
+            margin: 0 auto;
         }
     </style>
     <script src="aizuchi.js"></script>
@@ -67,6 +84,7 @@
     </div>
     <div id="theme-container">
         お題：<span id="theme-text"></span>
+        <button id="stop-button" style="display: none;">録音終了</button>
     </div>
 </body>
 

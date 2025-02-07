@@ -89,8 +89,10 @@ addEventListener('click', async () => {
     // お題を表示
     const themeContainer = document.getElementById('theme-container');
     const themeText = document.getElementById('theme-text');
+    const stopButton = document.getElementById('stop-button');
     themeText.textContent = 'hogehoge';
     themeContainer.style.display = 'block';
+    stopButton.style.display = 'block';
 
     const audioCtx = new AudioContext();
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -128,6 +130,22 @@ addEventListener('click', async () => {
     };
 
     mediaRecorder.start();
+
+    // 終了ボタンのクリックイベント
+    stopButton.addEventListener('click', async () => {
+        mediaRecorder.stop();
+        stopButton.style.display = 'none';
+
+        // 音声ストリームの停止
+        stream.getTracks().forEach(track => track.stop());
+
+        // 動画の停止
+        const video = document.getElementById('sota-video');
+        video.pause();
+
+        // 実験終了ページへ遷移
+        window.location.href = '/experiment-complete.html';
+    });
 
     setTimeout(() => {
         mediaRecorder.stop();
