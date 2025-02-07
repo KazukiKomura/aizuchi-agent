@@ -68,15 +68,25 @@ function createVbo(gl, array, usage) {
     return vbo;
 }
 
-const clickElem = document.createElement('div');
-clickElem.textContent = 'Click to Start';
-document.body.appendChild(clickElem);
+const clickText = document.getElementById('click-text');
+const idInput = document.getElementById('id-input');
+const startContainer = document.getElementById('start-container');
 
 let clicked = false;
-addEventListener('click', async () => {
+addEventListener('click', async (e) => {
+    // クリックされた要素がclick-text以外の場合は無視
+    if (e.target.id !== 'click-text') return;
+
+    // IDが入力されていない場合はアラートを表示
+    const participantId = idInput.value.trim();
+    if (!participantId) {
+        alert('IDを入力してください');
+        return;
+    }
+
     if (clicked) return;
     clicked = true;
-    clickElem.remove();
+    startContainer.remove();
 
     // 動画の再生を開始
     const video = document.getElementById('sota-video');
@@ -116,7 +126,10 @@ addEventListener('click', async () => {
         try {
             const response = await fetch('http://localhost:5500/save-audio', {
                 method: 'POST',
-                body: audioBlob
+                body: audioBlob,
+                headers: {
+                    'X-Participant-ID': participantId
+                }
             });
 
             if (!response.ok) {

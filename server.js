@@ -6,7 +6,7 @@ const server = http.createServer((req, res) => {
     // CORSヘッダーを追加
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Participant-ID');
 
     // OPTIONSリクエストへの対応
     if (req.method === 'OPTIONS') {
@@ -44,6 +44,13 @@ const server = http.createServer((req, res) => {
             res.end(content);
         });
     } else if (req.method === 'POST' && req.url === '/save-audio') {
+        const participantId = req.headers['x-participant-id'];
+        if (!participantId) {
+            res.writeHead(400);
+            res.end('Participant ID is required');
+            return;
+        }
+
         // 音声データの保存
         const chunks = [];
         req.on('data', chunk => chunks.push(chunk));
@@ -52,19 +59,29 @@ const server = http.createServer((req, res) => {
             const now = new Date();
             const filename = `recording_${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}.wav`;
 
+            // audio_data/ユーザーIDディレクトリのパスを作成
+            const audioBaseDir = 'audio_data';
+            const userDir = path.join(audioBaseDir, participantId);
+
             // audio_dataディレクトリが存在しない場合は作成
-            const audioDir = 'audio_data';
-            if (!fs.existsSync(audioDir)) {
-                fs.mkdirSync(audioDir);
+            if (!fs.existsSync(audioBaseDir)) {
+                fs.mkdirSync(audioBaseDir);
             }
 
-            // audio_dataディレクトリにファイルを保存
-            fs.writeFile(path.join(audioDir, filename), audioData, (err) => {
+            // ユーザーIDのディレクトリが存在しない場合は作成
+            if (!fs.existsSync(userDir)) {
+                fs.mkdirSync(userDir);
+            }
+
+            // ユーザーIDのディレクトリにファイルを保存
+            fs.writeFile(path.join(userDir, filename), audioData, (err) => {
                 if (err) {
+                    console.error('Save error:', err);
                     res.writeHead(500);
                     res.end('Error saving file');
                     return;
                 }
+                console.log('File saved:', path.join(userDir, filename));
                 res.writeHead(200);
                 res.end('File saved successfully');
             });
