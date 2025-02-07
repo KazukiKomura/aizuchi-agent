@@ -160,9 +160,7 @@ addEventListener('click', async (e) => {
         window.location.href = '/experiment-complete.html';
     });
 
-    setTimeout(() => {
-        mediaRecorder.stop();
-    }, 5000);
+
 
     /* 波形表示部分をコメントアウト
     const canvas = document.createElement('canvas');
