@@ -92,6 +92,27 @@ addEventListener('click', async (e) => {
 
     if (clicked) return;
     clicked = true;
+
+    // --- ここから音声チェック用の処理 ---
+    // hello.m4a を再生（「こんにちは」と発音される音声）
+    const helloAudio = new Audio('hello.m4a');
+    try {
+        await helloAudio.play();
+        await new Promise(resolve => helloAudio.addEventListener('ended', resolve));
+    } catch (error) {
+        console.error("音声チェック用のオーディオ再生エラー:", error);
+    }
+
+    // ユーザーに再生された音声を入力させる
+    const userInput = prompt("音声チェック: 聞こえた音声を入力してください。（例: はい)もし聞こえなければブラウザやパソコンの音声設定を見直して、再度お試しください");
+    if (userInput !== "こんにちは") {
+        alert("音声チェックに失敗しました。再度試してください。");
+        location.reload();
+        return;
+    }
+    // --- ここまで音声チェック用の処理 ---
+
+    // チェック成功後、開始画面を削除して次の画面に遷移
     startContainer.remove();
 
     // 動画コンテナを表示
@@ -106,7 +127,7 @@ addEventListener('click', async (e) => {
         console.error('動画の再生に失敗しました:', error);
     }
 
-    // お題を表示
+    // お題・録音終了ボタンの表示
     const themeContainer = document.getElementById('theme-container');
     const themeText = document.getElementById('theme-text');
     const stopButton = document.getElementById('stop-button');
@@ -170,9 +191,7 @@ addEventListener('click', async (e) => {
         window.location.href = '/experiment-complete.html';
     });
 
-
-
-    // 波形表示部分をコメントアウト
+    // 波形表示部分などの既存コードはそのままで...
     const canvas = document.createElement('canvas');
     canvas.width = innerWidth;
     canvas.height = innerHeight;
@@ -240,5 +259,4 @@ addEventListener('click', async (e) => {
     });
 
     requestId = requestAnimationFrame(render);
-    //
 });
