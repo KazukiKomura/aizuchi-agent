@@ -172,7 +172,7 @@ addEventListener('click', async (e) => {
 
 
 
-    /* 波形表示部分をコメントアウト
+    // 波形表示部分をコメントアウト
     const canvas = document.createElement('canvas');
     canvas.width = innerWidth;
     canvas.height = innerHeight;
@@ -240,5 +240,5 @@ addEventListener('click', async (e) => {
     });
 
     requestId = requestAnimationFrame(render);
-    */
+    //
 });

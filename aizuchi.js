@@ -30,9 +30,10 @@ class AizuchiSystem {
         for (let i = 0; i < bufferLength; i++) {
             signalPower += dataArray[i] * dataArray[i];
         }
+        console.log(`[DEBUG] Signal Power: ${signalPower}`);
 
         const minLag = Math.floor(sampleRate / 500);  // 500Hz
-        const maxLag = Math.floor(sampleRate / 50);   // 50Hz
+        const maxLag = Math.floor(sampleRate / 50);     // 50Hz
 
         for (let lag = minLag; lag < maxLag; lag++) {
             let correlation = 0;
@@ -40,6 +41,8 @@ class AizuchiSystem {
                 correlation += dataArray[i] * dataArray[i + lag];
             }
             correlation = correlation / signalPower;
+            // 詳細なデバッグ情報（必要に応じてコメントアウトを外してください）
+            // console.log(`[DEBUG] Lag: ${lag}, Correlation: ${correlation}`);
 
             if (correlation > maxCorrelation) {
                 maxCorrelation = correlation;
@@ -47,6 +50,7 @@ class AizuchiSystem {
             }
         }
 
+        console.log(`[DEBUG] maxCorrelation: ${maxCorrelation}, detected f0: ${f0}`);
         return maxCorrelation < 0.5 ? 0 : f0;
     }
 
@@ -70,9 +74,13 @@ class AizuchiSystem {
         if (now - this.lastAizuchiTime < this.AIZUCHI_COOLDOWN) {
             return;
         }
+        console.log('相槌');
+        // コンソールへのログ出力の代わりに、同じディレクトリ内の hai.mp3 を再生する
+        const audio = new Audio('hai.m4a');
+        audio.play().catch((error) => {
+            console.error("音声ファイルの再生中にエラーが発生しました:", error);
+        });
 
-        const randomAizuchi = this.AIZUCHI_TYPES[Math.floor(Math.random() * this.AIZUCHI_TYPES.length)];
-        console.log(`相槌: ${randomAizuchi}`);
         this.lastAizuchiTime = now;
         this.f0Array = [];
     }
@@ -97,34 +105,50 @@ class AizuchiSystem {
         const dataArray = new Float32Array(this.analyzer.frequencyBinCount);
         this.analyzer.getFloatTimeDomainData(dataArray);
 
+        // 現在の音量レベルを確認
+        const volumeStatus = this.checkVolumeLevel(dataArray);
+        console.log(`[DEBUG] Volume check: ${volumeStatus}`);
+
         const currentF0 = this.detectF0(dataArray);
+        console.log(`[DEBUG] currentF0: ${currentF0}`);
 
         if (currentF0 > 0) {
             this.f0Array.push(currentF0);
             const avgF0 = this.getAverageF0();
+            console.log(`[DEBUG] avgF0: ${avgF0}`);
 
             // F0が平均値から20%低下した場合
             if (currentF0 < avgF0 * (1 - this.F0_THRESHOLD)) {
-                this.cancelPendingAizuchi(); // 既存の予定をキャンセル
+                console.log(`[DEBUG] F0低下検出: currentF0=${currentF0}, threshold=${avgF0 * (1 - this.F0_THRESHOLD)}`);
+
+                // 既存の予約をキャンセル
+                this.cancelPendingAizuchi();
 
                 let speakingDetected = false;
 
-                // 発話継続チェックの開始
+                // 発話継続チェック開始
                 this.isSpeakingCheck = setInterval(() => {
                     const newDataArray = new Float32Array(this.analyzer.frequencyBinCount);
                     this.analyzer.getFloatTimeDomainData(newDataArray);
 
-                    if (this.checkVolumeLevel(newDataArray)) {
-                        speakingDetected = true;
-                        this.cancelPendingAizuchi();
-                    }
+                    const newVolumeStatus = this.checkVolumeLevel(newDataArray);
+                    console.log(`[DEBUG] 発話チェック中のVolume: ${newVolumeStatus}`);
+
+                    // if (this.checkVolumeLevel(newDataArray)) {
+                    //     speakingDetected = true;
+                    //     console.log(`[DEBUG] 発話中と判定`);
+                    //     this.cancelPendingAizuchi();
+                    // }
                 }, this.CHECK_INTERVAL);
 
-                // 相槌の予約
+                // 相槌予約
                 this.pendingAizuchi = setTimeout(() => {
                     clearInterval(this.isSpeakingCheck);
                     if (!speakingDetected) {
+                        console.log(`[DEBUG] 発話終了と判断され、相槌実施`);
                         this.showAizuchi();
+                    } else {
+                        console.log(`[DEBUG] 発話継続のため、相槌キャンセル`);
                     }
                 }, this.PHRASE_END_DELAY + this.AIZUCHI_DELAY);
             }
