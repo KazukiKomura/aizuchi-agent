@@ -46,6 +46,33 @@
             cursor: pointer;
         }
 
+        #instruction-container {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #instruction-container h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+
+        #instruction-container p,
+        #instruction-container ul {
+            font-size: 24px;
+        }
+
+        #continue-experiment {
+            padding: 10px 20px;
+            font-size: 24px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
         #video-container {
             position: fixed;
             top: 50%;
@@ -101,6 +128,17 @@
     <div id="start-container">
         <input type="text" id="id-input" placeholder="IDを入力してください" />
         <div id="click-text">Click to Start</div>
+    </div>
+
+    <div id="instruction-container">
+        <h2>実験の注意事項</h2>
+        <p>以下の注意事項をご確認ください:</p>
+        <ul>
+            <li>実験中はなるべく静かにしてください。</li>
+            <li>音声や映像の状態に異常がないかご確認ください。</li>
+            <li>不明な点があればすぐに管理者に連絡してください。</li>
+        </ul>
+        <button id="continue-experiment">実験を始める</button>
     </div>
 
     <div id="video-container" style="display: none;">

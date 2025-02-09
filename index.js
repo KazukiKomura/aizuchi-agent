@@ -84,7 +84,7 @@ addEventListener('click', async (e) => {
         return;
     }
 
-    // IDが半角英数字のみかチェック
+    // IDは半角英数字のみかチェック
     if (!/^[A-Za-z0-9]+$/.test(participantId)) {
         alert('IDは半角英数字のみ使用可能です');
         return;
@@ -112,8 +112,17 @@ addEventListener('click', async (e) => {
     }
     // --- ここまで音声チェック用の処理 ---
 
-    // チェック成功後、開始画面を削除して次の画面に遷移
+    // チェック成功後、開始画面を削除し、実験注意事項ページを表示
     startContainer.remove();
+    const instructionContainer = document.getElementById('instruction-container');
+    instructionContainer.style.display = 'block';
+
+    // 「実験を始める」ボタンのクリックを待つ
+    await new Promise(resolve => {
+        const continueButton = document.getElementById('continue-experiment');
+        continueButton.addEventListener('click', resolve, { once: true });
+    });
+    instructionContainer.remove();
 
     // 動画コンテナを表示
     const videoContainer = document.getElementById('video-container');
@@ -191,7 +200,7 @@ addEventListener('click', async (e) => {
         window.location.href = '/experiment-complete.html';
     });
 
-    // 波形表示部分などの既存コードはそのままで...
+    // 波形表示部分などの既存コードはそのまま...
     const canvas = document.createElement('canvas');
     canvas.width = innerWidth;
     canvas.height = innerHeight;
