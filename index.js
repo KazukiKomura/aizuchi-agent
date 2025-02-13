@@ -90,27 +90,12 @@ addEventListener('click', async (e) => {
         return;
     }
 
+    // IDから相槌モードを決定（ここで早めに計算）
+    const aizuchiMode = parseInt(participantId) % 3;
+    console.log(`相槌モード: ${aizuchiMode}`); // デバッグ用
+
     if (clicked) return;
     clicked = true;
-
-    // --- ここから音声チェック用の処理 ---
-    // hello.m4a を再生（「こんにちは」と発音される音声）
-    const helloAudio = new Audio('hello.m4a');
-    try {
-        await helloAudio.play();
-        await new Promise(resolve => helloAudio.addEventListener('ended', resolve));
-    } catch (error) {
-        console.error("音声チェック用のオーディオ再生エラー:", error);
-    }
-
-    // ユーザーに再生された音声を入力させる
-    const userInput = prompt("音声チェック: 聞こえた音声を入力してください。（例: はい)もし聞こえなければブラウザやパソコンの音声設定を見直して、再度お試しください");
-    if (userInput !== "こんにちは") {
-        alert("音声チェックに失敗しました。再度試してください。");
-        location.reload();
-        return;
-    }
-    // --- ここまで音声チェック用の処理 ---
 
     // チェック成功後、開始画面を削除し、実験注意事項ページを表示
     startContainer.remove();
@@ -118,154 +103,173 @@ addEventListener('click', async (e) => {
     instructionContainer.style.display = 'block';
 
     // 「実験を始める」ボタンのクリックを待つ
-    await new Promise(resolve => {
-        const continueButton = document.getElementById('continue-experiment');
-        continueButton.addEventListener('click', resolve, { once: true });
-    });
-    instructionContainer.remove();
-
-    // 動画コンテナを表示
-    const videoContainer = document.getElementById('video-container');
-    videoContainer.style.display = 'block';
-
-    // 動画の再生を開始
-    const video = document.getElementById('sota-video');
-    try {
-        await video.play();
-    } catch (error) {
-        console.error('動画の再生に失敗しました:', error);
-    }
-
-    // お題・録音終了ボタンの表示
-    const themeContainer = document.getElementById('theme-container');
-    const themeText = document.getElementById('theme-text');
-    const stopButton = document.getElementById('stop-button');
-    themeText.textContent = 'hogehoge';
-    themeContainer.style.display = 'block';
-    stopButton.style.display = 'block';
-
-    const audioCtx = new AudioContext();
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const input = audioCtx.createMediaStreamSource(stream);
-    const analyzer = audioCtx.createAnalyser();
-    input.connect(analyzer);
-
-    // 相槌システムの初期化
-    const aizuchiSystem = new AizuchiSystem(audioCtx, analyzer);
-
-    const mediaRecorder = new MediaRecorder(stream);
-    const audioChunks = [];
-
-    mediaRecorder.ondataavailable = (event) => {
-        audioChunks.push(event.data);
-    };
-
-    mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-
+    const continueButton = document.getElementById('continue-experiment');
+    continueButton.addEventListener('click', async () => {
+        // --- ここから音声チェック用の処理 ---
+        // hello.m4a を再生（「こんにちは」と発音される音声）
+        const helloAudio = new Audio('hello.m4a');
         try {
-            const response = await fetch('http://localhost:5500/save-audio', {
-                method: 'POST',
-                body: audioBlob,
-                headers: {
-                    'X-Participant-ID': participantId
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to save audio');
-            }
-
-            console.log('Audio saved successfully');
+            await helloAudio.play();
+            await new Promise(resolve => helloAudio.addEventListener('ended', resolve));
         } catch (error) {
-            console.error('Error saving audio:', error);
+            console.error("音声チェック用のオーディオ再生エラー:", error);
         }
-    };
 
-    mediaRecorder.start();
+        // ユーザーに再生された音声を入力させる
+        const userInput = prompt("音声チェック: 聞こえた音声を入力してください。（例: はい)もし聞こえなければブラウザやパソコンの音声設定を見直して、再度お試しください");
+        if (userInput !== "こんにちは") {
+            alert("音声チェックに失敗しました。再度試してください。");
+            location.reload();
+            return;
+        }
+        // --- ここまで音声チェック用の処理 ---
 
-    // 終了ボタンのクリックイベント
-    stopButton.addEventListener('click', async () => {
-        mediaRecorder.stop();
-        stopButton.style.display = 'none';
+        // 音声チェック成功後、実験画面に遷移
+        instructionContainer.remove();
 
-        // 音声ストリームの停止
-        stream.getTracks().forEach(track => track.stop());
+        // 動画コンテナを表示
+        const videoContainer = document.getElementById('video-container');
+        videoContainer.style.display = 'block';
 
-        // 動画の停止
+        // 動画の再生を開始
         const video = document.getElementById('sota-video');
-        video.pause();
-
-        // 実験終了ページへ遷移
-        window.location.href = '/experiment-complete.html';
-    });
-
-    // 波形表示部分などの既存コードはそのまま...
-    const canvas = document.createElement('canvas');
-    canvas.width = innerWidth;
-    canvas.height = innerHeight;
-    document.body.appendChild(canvas);
-
-    const gl = canvas.getContext('webgl2');
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-
-    const program = createProgram(gl,
-        createShader(gl, renderLineVertex, gl.VERTEX_SHADER),
-        createShader(gl, renderLineFragment, gl.FRAGMENT_SHADER)
-    );
-    const uniformLocs = getUniformLocs(gl, program, ['u_length', 'u_minValue', 'u_maxValue', 'u_color']);
-
-    const timeDomainArray = new Float32Array(analyzer.fftSize);
-    const frequencyArray = new Float32Array(analyzer.frequencyBinCount);
-    const timeDomainVbo = createVbo(gl, timeDomainArray, gl.DYNAMIC_DRAW);
-    const frequencyVbo = createVbo(gl, frequencyArray, gl.DYNAMIC_DRAW);
-
-    let requestId = null;
-    const render = () => {
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
-        analyzer.getFloatTimeDomainData(timeDomainArray);
-        gl.bindBuffer(gl.ARRAY_BUFFER, timeDomainVbo);
-        gl.bufferSubData(gl.ARRAY_BUFFER, 0, timeDomainArray);
-
-        gl.useProgram(program);
-        gl.uniform1f(uniformLocs.get('u_length'), timeDomainArray.length);
-        gl.uniform1f(uniformLocs.get('u_minValue'), -1.0);
-        gl.uniform1f(uniformLocs.get('u_maxValue'), 1.0);
-        gl.uniform3f(uniformLocs.get('u_color'), 1.0, 0.0, 0.0);
-        gl.bindBuffer(gl.ARRAY_BUFFER, timeDomainVbo);
-        gl.enableVertexAttribArray(0);
-        gl.vertexAttribPointer(0, 1, gl.FLOAT, false, 0, 0);
-        gl.drawArrays(gl.LINE_STRIP, 0, timeDomainArray.length);
-
-        analyzer.getFloatFrequencyData(frequencyArray);
-        gl.bindBuffer(gl.ARRAY_BUFFER, frequencyVbo);
-        gl.bufferSubData(gl.ARRAY_BUFFER, 0, frequencyArray);
-
-        gl.uniform1f(uniformLocs.get('u_length'), frequencyArray.length);
-        gl.uniform1f(uniformLocs.get('u_minValue'), analyzer.minDecibels);
-        gl.uniform1f(uniformLocs.get('u_maxValue'), analyzer.maxDecibels);
-        gl.uniform3f(uniformLocs.get('u_color'), 0.0, 0.0, 1.0);
-        gl.bindBuffer(gl.ARRAY_BUFFER, frequencyVbo);
-        gl.enableVertexAttribArray(0);
-        gl.vertexAttribPointer(0, 1, gl.FLOAT, false, 0, 0);
-        gl.drawArrays(gl.LINE_STRIP, 0, frequencyArray.length);
-
-        // 相槌システムの更新
-        aizuchiSystem.update();
-
-        requestId = requestAnimationFrame(render);
-    };
-
-    addEventListener('resize', () => {
-        if (requestId != null) {
-            cancelAnimationFrame(requestId);
+        try {
+            await video.play();
+        } catch (error) {
+            console.error('動画の再生に失敗しました:', error);
         }
+
+        // お題・録音終了ボタンの表示
+        const themeContainer = document.getElementById('theme-container');
+        const themeText = document.getElementById('theme-text');
+        const stopButton = document.getElementById('stop-button');
+        themeText.textContent = 'hogehoge';
+        themeContainer.style.display = 'block';
+        stopButton.style.display = 'block';
+
+        const audioCtx = new AudioContext();
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const input = audioCtx.createMediaStreamSource(stream);
+        const analyzer = audioCtx.createAnalyser();
+        input.connect(analyzer);
+
+        // 相槌システムの初期化（計算済みのモードを使用）
+        const aizuchiSystem = new AizuchiSystem(audioCtx, analyzer, aizuchiMode);
+
+        const mediaRecorder = new MediaRecorder(stream);
+        const audioChunks = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+            audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+
+            try {
+                const response = await fetch('http://localhost:5500/save-audio', {
+                    method: 'POST',
+                    body: audioBlob,
+                    headers: {
+                        'X-Participant-ID': participantId
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save audio');
+                }
+
+                console.log('Audio saved successfully');
+            } catch (error) {
+                console.error('Error saving audio:', error);
+            }
+        };
+
+        mediaRecorder.start();
+
+        // 終了ボタンのクリックイベント
+        stopButton.addEventListener('click', async () => {
+            mediaRecorder.stop();
+            stopButton.style.display = 'none';
+
+            // 音声ストリームの停止
+            stream.getTracks().forEach(track => track.stop());
+
+            // 動画の停止
+            const video = document.getElementById('sota-video');
+            video.pause();
+
+            // 実験終了ページへ遷移
+            window.location.href = '/experiment-complete.html';
+        });
+
+        // 波形表示部分などの既存コードはそのまま...
+        const canvas = document.createElement('canvas');
         canvas.width = innerWidth;
         canvas.height = innerHeight;
-        gl.viewport(0.0, 0.0, canvas.width, canvas.height);
+        document.body.appendChild(canvas);
+
+        const gl = canvas.getContext('webgl2');
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+
+        const program = createProgram(gl,
+            createShader(gl, renderLineVertex, gl.VERTEX_SHADER),
+            createShader(gl, renderLineFragment, gl.FRAGMENT_SHADER)
+        );
+        const uniformLocs = getUniformLocs(gl, program, ['u_length', 'u_minValue', 'u_maxValue', 'u_color']);
+
+        const timeDomainArray = new Float32Array(analyzer.fftSize);
+        const frequencyArray = new Float32Array(analyzer.frequencyBinCount);
+        const timeDomainVbo = createVbo(gl, timeDomainArray, gl.DYNAMIC_DRAW);
+        const frequencyVbo = createVbo(gl, frequencyArray, gl.DYNAMIC_DRAW);
+
+        let requestId = null;
+        const render = () => {
+            gl.clear(gl.COLOR_BUFFER_BIT);
+
+            analyzer.getFloatTimeDomainData(timeDomainArray);
+            gl.bindBuffer(gl.ARRAY_BUFFER, timeDomainVbo);
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, timeDomainArray);
+
+            gl.useProgram(program);
+            gl.uniform1f(uniformLocs.get('u_length'), timeDomainArray.length);
+            gl.uniform1f(uniformLocs.get('u_minValue'), -1.0);
+            gl.uniform1f(uniformLocs.get('u_maxValue'), 1.0);
+            gl.uniform3f(uniformLocs.get('u_color'), 1.0, 0.0, 0.0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, timeDomainVbo);
+            gl.enableVertexAttribArray(0);
+            gl.vertexAttribPointer(0, 1, gl.FLOAT, false, 0, 0);
+            gl.drawArrays(gl.LINE_STRIP, 0, timeDomainArray.length);
+
+            analyzer.getFloatFrequencyData(frequencyArray);
+            gl.bindBuffer(gl.ARRAY_BUFFER, frequencyVbo);
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, frequencyArray);
+
+            gl.uniform1f(uniformLocs.get('u_length'), frequencyArray.length);
+            gl.uniform1f(uniformLocs.get('u_minValue'), analyzer.minDecibels);
+            gl.uniform1f(uniformLocs.get('u_maxValue'), analyzer.maxDecibels);
+            gl.uniform3f(uniformLocs.get('u_color'), 0.0, 0.0, 1.0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, frequencyVbo);
+            gl.enableVertexAttribArray(0);
+            gl.vertexAttribPointer(0, 1, gl.FLOAT, false, 0, 0);
+            gl.drawArrays(gl.LINE_STRIP, 0, frequencyArray.length);
+
+            // 相槌システムの更新
+            aizuchiSystem.update();
+
+            requestId = requestAnimationFrame(render);
+        };
+
+        addEventListener('resize', () => {
+            if (requestId != null) {
+                cancelAnimationFrame(requestId);
+            }
+            canvas.width = innerWidth;
+            canvas.height = innerHeight;
+            gl.viewport(0.0, 0.0, canvas.width, canvas.height);
+            requestId = requestAnimationFrame(render);
+        });
+
         requestId = requestAnimationFrame(render);
     });
-
-    requestId = requestAnimationFrame(render);
 });

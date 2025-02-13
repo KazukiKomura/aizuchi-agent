@@ -1,7 +1,8 @@
 class AizuchiSystem {
-    constructor(audioCtx, analyzer) {
+    constructor(audioCtx, analyzer, mode) {
         this.audioCtx = audioCtx;
         this.analyzer = analyzer;
+        this.mode = mode;  // 0: なし, 1: ランダム, 2: アルゴリズム
         this.f0Array = [];
         this.lastAizuchiTime = Date.now();
 
@@ -13,11 +14,33 @@ class AizuchiSystem {
         this.VOLUME_THRESHOLD = -50;       // 音声検出のための閾値 (dB)
         this.CHECK_INTERVAL = 50;         // 発話継続チェックの間隔 (50ms)
 
+        // ランダム相槌用のパラメータ
+        this.RANDOM_AIZUCHI_MIN_INTERVAL = 3000;  // 最小間隔 3秒
+        this.RANDOM_AIZUCHI_MAX_INTERVAL = 7000;  // 最大間隔 7秒
+
         this.AIZUCHI_TYPES = ['うん', 'はい', 'ええ'];
         this.isSpeakingCheck = null;      // 発話継続チェック用のインターバルID
         this.pendingAizuchi = null;       // 予定された相槌のタイムアウトID
 
-        console.log('相槌システムを初期化しました');
+        // モード1（ランダム相槌）の場合、定期的なチェックを開始
+        if (this.mode === 1) {
+            this.startRandomAizuchi();
+        }
+
+        console.log(`相槌システムを初期化しました（モード: ${this.mode}）`);
+    }
+
+    startRandomAizuchi() {
+        const scheduleNext = () => {
+            const interval = Math.random() *
+                (this.RANDOM_AIZUCHI_MAX_INTERVAL - this.RANDOM_AIZUCHI_MIN_INTERVAL) +
+                this.RANDOM_AIZUCHI_MIN_INTERVAL;
+            setTimeout(() => {
+                this.showAizuchi();
+                scheduleNext();
+            }, interval);
+        };
+        scheduleNext();
     }
 
     detectF0(dataArray) {
@@ -97,6 +120,12 @@ class AizuchiSystem {
     }
 
     update() {
+        // モード0の場合は何もしない
+        if (this.mode === 0) return;
+        // モード1の場合はランダム相槌が既に設定されているので、ここでは何もしない
+        if (this.mode === 1) return;
+
+        // モード2の場合は既存のアルゴリズムを実行
         const now = Date.now();
         if (now - this.lastAizuchiTime < this.AIZUCHI_COOLDOWN) {
             return;
